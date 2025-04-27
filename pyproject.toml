@@ -38,6 +38,10 @@ classifiers = [
 # ---- Main dependencies ----
 
 dependencies = [
+    "clipboard>=0.0.4",
+    "pillow>=11.2.1",
+    "pyperclip>=1.9.0",
+    "pyqt6>=6.9.0",
 ]
 
 
