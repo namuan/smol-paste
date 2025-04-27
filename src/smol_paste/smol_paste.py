@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
 class ImageOptimizer(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Image Optimizer")
+        self.setWindowTitle("Smol Paste")
         self.setGeometry(100, 100, 800, 600)
 
         # Main widget and layout
@@ -97,15 +97,16 @@ class ImageOptimizer(QMainWindow):
                 button.setChecked(True)
         self.controls_layout.addLayout(self.quality_button_layout)
 
+        # Connect preset buttons to apply changes automatically
+        self.size_button_group.buttonClicked.connect(self.apply_changes)
+        self.quality_button_group.buttonClicked.connect(self.apply_changes)
+
         # Buttons
         self.load_button = QPushButton("Load from Clipboard")
         self.load_button.clicked.connect(self.load_from_clipboard)
         self.controls_layout.addWidget(self.load_button)
 
-        self.apply_button = QPushButton("Apply Changes")
-        self.apply_button.clicked.connect(self.apply_changes)
-        self.apply_button.setEnabled(False)
-        self.controls_layout.addWidget(self.apply_button)
+        # Apply button removed - changes apply automatically
 
         self.copy_button = QPushButton("Copy to Clipboard")
         self.copy_button.clicked.connect(self.copy_to_clipboard)
@@ -133,7 +134,6 @@ class ImageOptimizer(QMainWindow):
                 self.processed_image = image  # Initially processed is same as original
                 self.display_image(image, "original")
                 self.display_image(image, "processed")  # Display in both labels
-                self.apply_button.setEnabled(True)
                 self.copy_button.setEnabled(True)
                 self.status_label.setText("Image loaded successfully")
                 self.stats_label.setText("") # Clear stats on new load
@@ -142,7 +142,6 @@ class ImageOptimizer(QMainWindow):
                 self.clear_image_displays()
                 self.original_image = None
                 self.processed_image = None
-                self.apply_button.setEnabled(False)
                 self.copy_button.setEnabled(False)
                 self.stats_label.setText("") # Clear stats if no image
         except Exception as e:
@@ -150,7 +149,6 @@ class ImageOptimizer(QMainWindow):
             self.clear_image_displays()
             self.original_image = None
             self.processed_image = None
-            self.apply_button.setEnabled(False)
             self.copy_button.setEnabled(False)
             self.stats_label.setText("") # Clear stats on error
 
