@@ -6,7 +6,7 @@ from PyQt6.QtCore import QBuffer, QIODevice, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
-    QComboBox,
+    QButtonGroup,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -69,18 +69,33 @@ class ImageOptimizer(QMainWindow):
 
         # Size presets
         self.size_label = QLabel("Size Preset:")
-        self.size_combo = QComboBox()
-        self.size_combo.addItems(["100%", "75%", "50%", "25%"])
         self.controls_layout.addWidget(self.size_label)
-        self.controls_layout.addWidget(self.size_combo)
+        self.size_button_group = QButtonGroup(self)
+        self.size_button_layout = QHBoxLayout()
+        size_presets = ["100%", "75%", "50%", "25%"]
+        for i, preset in enumerate(size_presets):
+            button = QPushButton(preset)
+            button.setCheckable(True)
+            self.size_button_group.addButton(button, i)
+            self.size_button_layout.addWidget(button)
+            if preset == "100%": # Default selection
+                button.setChecked(True)
+        self.controls_layout.addLayout(self.size_button_layout)
 
         # Quality presets
         self.quality_label = QLabel("Quality Preset:")
-        self.quality_combo = QComboBox()
-        self.quality_combo.addItems(["High (95)", "Medium (85)", "Low (70)", "Very Low (50)"])
-        self.quality_combo.setCurrentIndex(1)  # Default to Medium
         self.controls_layout.addWidget(self.quality_label)
-        self.controls_layout.addWidget(self.quality_combo)
+        self.quality_button_group = QButtonGroup(self)
+        self.quality_button_layout = QHBoxLayout()
+        quality_presets = {"High (95)": 95, "Medium (85)": 85, "Low (70)": 70, "Very Low (50)": 50}
+        for i, (text, value) in enumerate(quality_presets.items()):
+            button = QPushButton(text)
+            button.setCheckable(True)
+            self.quality_button_group.addButton(button, value) # Store quality value as ID
+            self.quality_button_layout.addWidget(button)
+            if text == "Medium (85)": # Default selection
+                button.setChecked(True)
+        self.controls_layout.addLayout(self.quality_button_layout)
 
         # Buttons
         self.load_button = QPushButton("Load from Clipboard")
@@ -188,18 +203,29 @@ class ImageOptimizer(QMainWindow):
             # --- Apply transformations ---
 
             # Apply size reduction
-            size_text = self.size_combo.currentText()
-            size_percent = int(size_text.replace("%", "")) / 100.0
-            new_size = (int(pil_image.width * size_percent), int(pil_image.height * size_percent))
-            pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
+            selected_size_button = self.size_button_group.checkedButton()
+            if selected_size_button:
+                size_text = selected_size_button.text()
+                size_percent = int(size_text.replace("%", "")) / 100.0
+                new_size = (int(pil_image.width * size_percent), int(pil_image.height * size_percent))
+                pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
+            else:
+                # Handle case where no size button is selected (shouldn't happen with defaults)
+                self.status_label.setText("Error: No size preset selected")
+                return
 
             # Convert to RGB if image has alpha channel
             if pil_image.mode == "RGBA":
                 pil_image = pil_image.convert("RGB")
 
             # Get quality value
-            quality_text = self.quality_combo.currentText()
-            quality_value = int(quality_text[quality_text.find("(") + 1 : quality_text.find(")")])
+            selected_quality_button = self.quality_button_group.checkedButton()
+            if selected_quality_button:
+                quality_value = self.quality_button_group.id(selected_quality_button)
+            else:
+                # Handle case where no quality button is selected (shouldn't happen with defaults)
+                self.status_label.setText("Error: No quality preset selected")
+                return
 
             # Convert back to QImage
             buffer = io.BytesIO()
