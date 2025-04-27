@@ -1,10 +1,22 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QSlider, QHBoxLayout, \
-    QSizePolicy, QComboBox, QSplitter
-from PyQt6.QtGui import QImage, QPixmap, QClipboard
-from PyQt6.QtCore import Qt, QBuffer, QIODevice
-import sys
-from PIL import Image
 import io
+import sys
+
+from PIL import Image
+from PyQt6.QtCore import QBuffer, QIODevice, Qt
+from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QSizePolicy,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
+)
+
 
 class ImageOptimizer(QMainWindow):
     def __init__(self):
@@ -20,31 +32,35 @@ class ImageOptimizer(QMainWindow):
 
         # --- Left Column (Image Comparison) ---
         self.image_comparison_widget = QWidget()
-        self.image_comparison_layout = QVBoxLayout() # Changed to QVBoxLayout for vertical stacking
+        self.image_comparison_layout = QVBoxLayout()  # Changed to QVBoxLayout for vertical stacking
         self.image_comparison_widget.setLayout(self.image_comparison_layout)
 
         self.original_image_label = QLabel("Original Image")
         self.original_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # self.original_image_label.setScaledContents(True) # Removed to prevent stretching
-        self.original_image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self.original_image_label.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
+        )
         self.image_comparison_layout.addWidget(self.original_image_label)
 
         self.processed_image_label = QLabel("Processed Image")
         self.processed_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # self.processed_image_label.setScaledContents(True) # Removed to prevent stretching
-        self.processed_image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self.processed_image_label.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
+        )
         self.image_comparison_layout.addWidget(self.processed_image_label)
 
         # --- Right Column (Controls) ---
         self.controls_layout = QVBoxLayout()  # Vertical layout for controls
-        self.controls_widget = QWidget()      # Widget to hold the controls layout
+        self.controls_widget = QWidget()  # Widget to hold the controls layout
         self.controls_widget.setLayout(self.controls_layout)
 
-        # --- Splitter --- 
+        # --- Splitter ---
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.splitter.addWidget(self.image_comparison_widget) # Add comparison widget
+        self.splitter.addWidget(self.image_comparison_widget)  # Add comparison widget
         self.splitter.addWidget(self.controls_widget)
-        self.splitter.setSizes([600, 200]) # Initial sizes
+        self.splitter.setSizes([600, 200])  # Initial sizes
         self.main_layout.addWidget(self.splitter)
 
         # Status label
@@ -62,7 +78,7 @@ class ImageOptimizer(QMainWindow):
         self.quality_label = QLabel("Quality Preset:")
         self.quality_combo = QComboBox()
         self.quality_combo.addItems(["High (95)", "Medium (85)", "Low (70)", "Very Low (50)"])
-        self.quality_combo.setCurrentIndex(1) # Default to Medium
+        self.quality_combo.setCurrentIndex(1)  # Default to Medium
         self.controls_layout.addWidget(self.quality_label)
         self.controls_layout.addWidget(self.quality_combo)
 
@@ -81,7 +97,12 @@ class ImageOptimizer(QMainWindow):
         self.copy_button.setEnabled(False)
         self.controls_layout.addWidget(self.copy_button)
 
-        self.controls_layout.addStretch(1) # Add stretch to push controls up
+        self.controls_layout.addStretch(1)  # Add stretch to push controls up
+
+        # Stats label
+        self.stats_label = QLabel("")
+        self.stats_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.controls_layout.addWidget(self.stats_label)
 
         # Image data
         self.original_image = None
@@ -94,12 +115,13 @@ class ImageOptimizer(QMainWindow):
 
             if not image.isNull():
                 self.original_image = image
-                self.processed_image = image # Initially processed is same as original
-                self.display_image(image, 'original')
-                self.display_image(image, 'processed') # Display in both labels
+                self.processed_image = image  # Initially processed is same as original
+                self.display_image(image, "original")
+                self.display_image(image, "processed")  # Display in both labels
                 self.apply_button.setEnabled(True)
                 self.copy_button.setEnabled(True)
                 self.status_label.setText("Image loaded successfully")
+                self.stats_label.setText("") # Clear stats on new load
             else:
                 self.status_label.setText("No image in clipboard")
                 self.clear_image_displays()
@@ -107,6 +129,7 @@ class ImageOptimizer(QMainWindow):
                 self.processed_image = None
                 self.apply_button.setEnabled(False)
                 self.copy_button.setEnabled(False)
+                self.stats_label.setText("") # Clear stats if no image
         except Exception as e:
             self.status_label.setText(f"Error loading image: {str(e)}")
             self.clear_image_displays()
@@ -114,21 +137,31 @@ class ImageOptimizer(QMainWindow):
             self.processed_image = None
             self.apply_button.setEnabled(False)
             self.copy_button.setEnabled(False)
+            self.stats_label.setText("") # Clear stats on error
 
     def clear_image_displays(self):
         self.original_image_label.setText("Original Image")
         self.original_image_label.clear()
         self.processed_image_label.setText("Processed Image")
         self.processed_image_label.clear()
+        self.stats_label.setText("") # Clear stats when displays are cleared
 
     def display_image(self, image, target_label):
         try:
             pixmap = QPixmap.fromImage(image)
-            label = self.original_image_label if target_label == 'original' else self.processed_image_label
-            
+            label = (
+                self.original_image_label
+                if target_label == "original"
+                else self.processed_image_label
+            )
+
             # Scale pixmap to fit label while keeping aspect ratio, but don't scale up
-            scaled_pixmap = pixmap.scaled(label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            
+            scaled_pixmap = pixmap.scaled(
+                label.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+
             label.setPixmap(scaled_pixmap)
             label.setText("")
         except Exception as e:
@@ -140,27 +173,33 @@ class ImageOptimizer(QMainWindow):
             return
 
         try:
-            # Convert QImage to PIL Image
-            buffer = QBuffer()
-            buffer.open(QIODevice.OpenModeFlag.WriteOnly)
-            self.original_image.save(buffer, "PNG")
-            pil_image = Image.open(io.BytesIO(buffer.data()))
-            buffer.close()
+            # Get original dimensions and estimate size (using PNG for lossless size)
+            original_width = self.original_image.width()
+            original_height = self.original_image.height()
+            original_buffer_png = QBuffer()
+            original_buffer_png.open(QIODevice.OpenModeFlag.WriteOnly)
+            self.original_image.save(original_buffer_png, "PNG")
+            original_size_bytes = original_buffer_png.size()
+            original_buffer_png.close()
+
+            # Convert QImage to PIL Image using the PNG buffer
+            pil_image = Image.open(io.BytesIO(original_buffer_png.data()))
+
+            # --- Apply transformations ---
 
             # Apply size reduction
             size_text = self.size_combo.currentText()
-            size_percent = int(size_text.replace('%', '')) / 100.0
-            new_size = (int(pil_image.width * size_percent),
-                        int(pil_image.height * size_percent))
+            size_percent = int(size_text.replace("%", "")) / 100.0
+            new_size = (int(pil_image.width * size_percent), int(pil_image.height * size_percent))
             pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
 
             # Convert to RGB if image has alpha channel
-            if pil_image.mode == 'RGBA':
-                pil_image = pil_image.convert('RGB')
+            if pil_image.mode == "RGBA":
+                pil_image = pil_image.convert("RGB")
 
             # Get quality value
             quality_text = self.quality_combo.currentText()
-            quality_value = int(quality_text[quality_text.find('(')+1:quality_text.find(')')])
+            quality_value = int(quality_text[quality_text.find("(") + 1 : quality_text.find(")")])
 
             # Convert back to QImage
             buffer = io.BytesIO()
@@ -170,7 +209,25 @@ class ImageOptimizer(QMainWindow):
                 raise ValueError("Failed to load processed image data")
 
             self.processed_image = qimage
-            self.display_image(qimage, 'processed') # Update only the processed image label
+            self.display_image(qimage, "processed")  # Update only the processed image label
+
+            # Calculate stats
+            processed_size_bytes = buffer.tell() # Get size from JPEG buffer
+            processed_width = qimage.width()
+            processed_height = qimage.height()
+
+            size_reduction_percent = 0
+            if original_size_bytes > 0:
+                size_reduction_percent = (1 - (processed_size_bytes / original_size_bytes)) * 100
+
+            original_kb = original_size_bytes / 1024
+            processed_kb = processed_size_bytes / 1024
+            stats_text = (
+                f"Original: {original_width}x{original_height}, {original_kb:.1f} KB\n"
+                f"Processed: {processed_width}x{processed_height}, {processed_kb:.1f} KB\n"
+                f"Reduction: {size_reduction_percent:.1f}%"
+            )
+            self.stats_label.setText(stats_text)
             self.status_label.setText("Image processed successfully")
 
         except Exception as e:
@@ -187,11 +244,13 @@ class ImageOptimizer(QMainWindow):
         except Exception as e:
             self.status_label.setText(f"Error copying image: {str(e)}")
 
+
 def main():
     app = QApplication(sys.argv)
     window = ImageOptimizer()
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()
