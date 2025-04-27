@@ -153,10 +153,10 @@ class ImageOptimizer(QMainWindow):
             self.stats_label.setText("") # Clear stats on error
 
     def clear_image_displays(self):
-        self.original_image_label.setText("Original Image")
         self.original_image_label.clear()
-        self.processed_image_label.setText("Processed Image")
+        self.original_image_label.setText("Original Image")
         self.processed_image_label.clear()
+        self.processed_image_label.setText("Processed Image")
         self.stats_label.setText("") # Clear stats when displays are cleared
 
     def display_image(self, image, target_label):
