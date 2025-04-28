@@ -20,14 +20,13 @@ Smol Paste is a simple, modern clipboard image optimizer with a PyQt6 GUI. It al
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/yourusername/smol-paste.git
+   git clone https://github.com/namuan/smol-paste
    cd smol-paste
    ```
-2. **Install dependencies:**
-   ```sh
-   pip install -r requirements.txt
-   ```
-   Ensure you have Python 3.8+ and PyQt6 installed.
+
+For how to install uv and Python, see [installation.md](installation.md).
+
+For development workflows, see [development.md](development.md).
 
 ---
 
@@ -35,25 +34,13 @@ Smol Paste is a simple, modern clipboard image optimizer with a PyQt6 GUI. It al
 
 Run the application:
 ```sh
-python -m src.smol_paste.smol_paste
+make run
 ```
 
 - Click "Load from Clipboard" to load an image from your clipboard.
 - Use the size and quality preset buttons to adjust the image.
 - View the original and processed images side-by-side.
 - Click "Copy to Clipboard" to copy the optimized image.
-
----
-
-## Development
-
-- The main application code is in `src/smol_paste/smol_paste.py`.
-- Tests are located in `tests/test_smol_paste.py`.
-- To run tests:
-  ```sh
-  pytest
-  ```
-- For development workflow details, see [development.md](development.md).
 
 ---
 
