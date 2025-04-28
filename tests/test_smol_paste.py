@@ -54,7 +54,7 @@ def test_ui(qtbot):
 
     # Simulate clicking 'Load from Clipboard'
     qtbot.mouseClick(window.load_button, Qt.MouseButton.LeftButton)
-    assert window.status_label.text() == "Image loaded successfully"
+    assert window.status_label.text() == "Image processed successfully"
     assert window.original_image is not None
     assert window.processed_image is not None
     assert window.copy_button.isEnabled()

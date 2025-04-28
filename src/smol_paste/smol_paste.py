@@ -106,8 +106,6 @@ class ImageOptimizer(QMainWindow):
         self.load_button.clicked.connect(self.load_from_clipboard)
         self.controls_layout.addWidget(self.load_button)
 
-        # Apply button removed - changes apply automatically
-
         self.copy_button = QPushButton("Copy to Clipboard")
         self.copy_button.clicked.connect(self.copy_to_clipboard)
         self.copy_button.setEnabled(False)
@@ -123,6 +121,7 @@ class ImageOptimizer(QMainWindow):
         # Image data
         self.original_image = None
         self.processed_image = None
+        self.load_from_clipboard()
 
     def load_from_clipboard(self):
         try:
@@ -136,7 +135,7 @@ class ImageOptimizer(QMainWindow):
                 self.display_image(image, "processed")  # Display in both labels
                 self.copy_button.setEnabled(True)
                 self.status_label.setText("Image loaded successfully")
-                self.stats_label.setText("") # Clear stats on new load
+                self.apply_changes()
             else:
                 self.status_label.setText("No image in clipboard")
                 self.clear_image_displays()
