@@ -268,6 +268,14 @@ class ImageOptimizer(QMainWindow):
         except Exception as e:
             self.status_label.setText(f"Error copying image: {str(e)}")
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Update displayed images to fit new window size
+        if self.original_image:
+            self.display_image(self.original_image, "original")
+        if self.processed_image:
+            self.display_image(self.processed_image, "processed")
+
 
 def main():
     app = QApplication(sys.argv)
