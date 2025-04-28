@@ -2,7 +2,7 @@ import io
 import sys
 
 from PIL import Image
-from PyQt6.QtCore import QBuffer, QIODevice, Qt
+from PyQt6.QtCore import QBuffer, QIODevice, Qt, QByteArray
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -188,14 +188,15 @@ class ImageOptimizer(QMainWindow):
             # Get original dimensions and estimate size (using PNG for lossless size)
             original_width = self.original_image.width()
             original_height = self.original_image.height()
-            original_buffer_png = QBuffer()
+            original_byte_array = QByteArray()
+            original_buffer_png = QBuffer(original_byte_array)
             original_buffer_png.open(QIODevice.OpenModeFlag.WriteOnly)
             self.original_image.save(original_buffer_png, "PNG")
             original_size_bytes = original_buffer_png.size()
             original_buffer_png.close()
 
             # Convert QImage to PIL Image using the PNG buffer
-            pil_image = Image.open(io.BytesIO(original_buffer_png.data()))
+            pil_image = Image.open(io.BytesIO(bytes(original_byte_array)))
 
             # --- Apply transformations ---
 
