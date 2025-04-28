@@ -1,9 +1,0 @@
-# Changes here will be overwritten by Copier. Do not edit manually.
-_commit: v0.2.7
-_src_path: gh:jlevy/simple-modern-uv
-package_author_email: 575441+namuan@users.noreply.github.com
-package_author_name: namuan
-package_description: Shrink Clipboard Images
-package_github_org: ''
-package_module: smol_paste
-package_name: smol-paste

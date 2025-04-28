@@ -1,6 +1,4 @@
-# Makefile for easy development workflows.
-# See development.md for docs.
-# Note GitHub Actions call uv directly, not this Makefile.
+export PROJECTNAME=$(shell basename "$(PWD)")
 
 .DEFAULT_GOAL := default
 
@@ -22,6 +20,10 @@ upgrade:
 
 build:
 	uv build
+
+run: ## Run the application
+	@echo "🚀 Testing code: Running"
+	uv run $(PROJECTNAME)
 
 clean:
 	-rm -rf dist/
