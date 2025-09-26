@@ -2,7 +2,7 @@ import io
 import sys
 
 from PIL import Image
-from PyQt6.QtCore import QBuffer, QIODevice, Qt, QByteArray
+from PyQt6.QtCore import QBuffer, QByteArray, QIODevice, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -38,17 +38,13 @@ class ImageOptimizer(QMainWindow):
         self.original_image_label = QLabel("Original Image")
         self.original_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # self.original_image_label.setScaledContents(True) # Removed to prevent stretching
-        self.original_image_label.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
-        )
+        self.original_image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.image_comparison_layout.addWidget(self.original_image_label)
 
         self.processed_image_label = QLabel("Processed Image")
         self.processed_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # self.processed_image_label.setScaledContents(True) # Removed to prevent stretching
-        self.processed_image_label.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
-        )
+        self.processed_image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.image_comparison_layout.addWidget(self.processed_image_label)
 
         # --- Right Column (Controls) ---
@@ -78,7 +74,7 @@ class ImageOptimizer(QMainWindow):
             button.setCheckable(True)
             self.size_button_group.addButton(button, i)
             self.size_button_layout.addWidget(button)
-            if preset == "100%": # Default selection
+            if preset == "100%":  # Default selection
                 button.setChecked(True)
         self.controls_layout.addLayout(self.size_button_layout)
 
@@ -88,12 +84,12 @@ class ImageOptimizer(QMainWindow):
         self.quality_button_group = QButtonGroup(self)
         self.quality_button_layout = QHBoxLayout()
         quality_presets = {"High (95)": 95, "Medium (85)": 85, "Low (70)": 70, "Very Low (50)": 50}
-        for i, (text, value) in enumerate(quality_presets.items()):
+        for _i, (text, value) in enumerate(quality_presets.items()):
             button = QPushButton(text)
             button.setCheckable(True)
-            self.quality_button_group.addButton(button, value) # Store quality value as ID
+            self.quality_button_group.addButton(button, value)  # Store quality value as ID
             self.quality_button_layout.addWidget(button)
-            if text == "Medium (85)": # Default selection
+            if text == "Medium (85)":  # Default selection
                 button.setChecked(True)
         self.controls_layout.addLayout(self.quality_button_layout)
 
@@ -142,30 +138,26 @@ class ImageOptimizer(QMainWindow):
                 self.original_image = None
                 self.processed_image = None
                 self.copy_button.setEnabled(False)
-                self.stats_label.setText("") # Clear stats if no image
+                self.stats_label.setText("")  # Clear stats if no image
         except Exception as e:
-            self.status_label.setText(f"Error loading image: {str(e)}")
+            self.status_label.setText(f"Error loading image: {e!s}")
             self.clear_image_displays()
             self.original_image = None
             self.processed_image = None
             self.copy_button.setEnabled(False)
-            self.stats_label.setText("") # Clear stats on error
+            self.stats_label.setText("")  # Clear stats on error
 
     def clear_image_displays(self):
         self.original_image_label.clear()
         self.original_image_label.setText("Original Image")
         self.processed_image_label.clear()
         self.processed_image_label.setText("Processed Image")
-        self.stats_label.setText("") # Clear stats when displays are cleared
+        self.stats_label.setText("")  # Clear stats when displays are cleared
 
     def display_image(self, image, target_label):
         try:
             pixmap = QPixmap.fromImage(image)
-            label = (
-                self.original_image_label
-                if target_label == "original"
-                else self.processed_image_label
-            )
+            label = self.original_image_label if target_label == "original" else self.processed_image_label
 
             # Scale pixmap to fit label while keeping aspect ratio, but don't scale up
             scaled_pixmap = pixmap.scaled(
@@ -177,7 +169,7 @@ class ImageOptimizer(QMainWindow):
             label.setPixmap(scaled_pixmap)
             label.setText("")
         except Exception as e:
-            self.status_label.setText(f"Error displaying image: {str(e)}")
+            self.status_label.setText(f"Error displaying image: {e!s}")
 
     def apply_changes(self):
         if not self.original_image:
@@ -236,7 +228,7 @@ class ImageOptimizer(QMainWindow):
             self.display_image(qimage, "processed")  # Update only the processed image label
 
             # Calculate stats
-            processed_size_bytes = buffer.tell() # Get size from JPEG buffer
+            processed_size_bytes = buffer.tell()  # Get size from JPEG buffer
             processed_width = qimage.width()
             processed_height = qimage.height()
 
@@ -255,7 +247,7 @@ class ImageOptimizer(QMainWindow):
             self.status_label.setText("Image processed successfully")
 
         except Exception as e:
-            self.status_label.setText(f"Error processing image: {str(e)}")
+            self.status_label.setText(f"Error processing image: {e!s}")
 
     def copy_to_clipboard(self):
         try:
@@ -266,7 +258,7 @@ class ImageOptimizer(QMainWindow):
             else:
                 self.status_label.setText("No image to copy")
         except Exception as e:
-            self.status_label.setText(f"Error copying image: {str(e)}")
+            self.status_label.setText(f"Error copying image: {e!s}")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

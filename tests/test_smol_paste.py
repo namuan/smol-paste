@@ -5,6 +5,7 @@ from PIL import Image as PILImage
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication
+
 from smol_paste.smol_paste import ImageOptimizer
 
 
@@ -27,6 +28,7 @@ def test_image_resize_and_quality():
     # Save as JPEG with different quality
     for quality in [95, 85, 70, 50]:
         from io import BytesIO
+
         buf = BytesIO()
         rgb_img = resized.convert("RGB") if resized.mode != "RGB" else resized
         rgb_img.save(buf, format="JPEG", quality=quality)
