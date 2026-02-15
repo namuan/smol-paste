@@ -1,5 +1,6 @@
 import io
 import sys
+import tempfile
 
 from PIL import Image
 from PyQt6.QtCore import QBuffer, QByteArray, QIODevice, Qt
@@ -102,10 +103,15 @@ class ImageOptimizer(QMainWindow):
         self.load_button.clicked.connect(self.load_from_clipboard)
         self.controls_layout.addWidget(self.load_button)
 
-        self.copy_button = QPushButton("Copy to Clipboard")
+        self.copy_button = QPushButton("Copy Image to Clipboard")
         self.copy_button.clicked.connect(self.copy_to_clipboard)
         self.copy_button.setEnabled(False)
         self.controls_layout.addWidget(self.copy_button)
+
+        self.copy_path_button = QPushButton("Save & Copy File Path")
+        self.copy_path_button.clicked.connect(self.save_and_copy_path)
+        self.copy_path_button.setEnabled(False)
+        self.controls_layout.addWidget(self.copy_path_button)
 
         self.controls_layout.addStretch(1)  # Add stretch to push controls up
 
@@ -130,6 +136,7 @@ class ImageOptimizer(QMainWindow):
                 self.display_image(image, "original")
                 self.display_image(image, "processed")  # Display in both labels
                 self.copy_button.setEnabled(True)
+                self.copy_path_button.setEnabled(True)
                 self.status_label.setText("Image loaded successfully")
                 self.apply_changes()
             else:
@@ -138,6 +145,7 @@ class ImageOptimizer(QMainWindow):
                 self.original_image = None
                 self.processed_image = None
                 self.copy_button.setEnabled(False)
+                self.copy_path_button.setEnabled(False)
                 self.stats_label.setText("")  # Clear stats if no image
         except Exception as e:
             self.status_label.setText(f"Error loading image: {e!s}")
@@ -145,6 +153,7 @@ class ImageOptimizer(QMainWindow):
             self.original_image = None
             self.processed_image = None
             self.copy_button.setEnabled(False)
+            self.copy_path_button.setEnabled(False)
             self.stats_label.setText("")  # Clear stats on error
 
     def clear_image_displays(self):
@@ -259,6 +268,20 @@ class ImageOptimizer(QMainWindow):
                 self.status_label.setText("No image to copy")
         except Exception as e:
             self.status_label.setText(f"Error copying image: {e!s}")
+
+    def save_and_copy_path(self):
+        try:
+            if self.processed_image:
+                with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                    file_path = tmp.name
+                self.processed_image.save(file_path, "JPEG")
+                clipboard = QApplication.clipboard()
+                clipboard.setText(file_path)
+                self.status_label.setText("Image saved and path copied to clipboard")
+            else:
+                self.status_label.setText("No image to save")
+        except Exception as e:
+            self.status_label.setText(f"Error saving image: {e!s}")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
