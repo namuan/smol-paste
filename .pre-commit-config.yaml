@@ -48,13 +48,13 @@ repos:
     hooks:
       - id: xenon-tests
         name: xenon-tests
-        entry: uv run xenon --max-absolute D
+        entry: uv run --frozen xenon --max-absolute D
         language: system
         types: [python]
         files: ^tests/
       - id: xenon-non-tests
         name: xenon-non-tests
-        entry: uv run xenon --max-absolute B
+        entry: uv run --frozen xenon --max-absolute B
         language: system
         types: [python]
         exclude: ^tests/
