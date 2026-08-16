@@ -3,7 +3,7 @@ import sys
 import tempfile
 
 from PIL import Image
-from PyQt6.QtCore import QBuffer, QByteArray, QIODevice, Qt
+from PyQt6.QtCore import QBuffer, QIODevice, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -186,18 +186,12 @@ class ImageOptimizer(QMainWindow):
             return
 
         try:
-            # Get original dimensions and estimate size (using PNG for lossless size)
-            original_width = self.original_image.width()
-            original_height = self.original_image.height()
-            original_byte_array = QByteArray()
-            original_buffer_png = QBuffer(original_byte_array)
-            original_buffer_png.open(QIODevice.OpenModeFlag.WriteOnly)
-            self.original_image.save(original_buffer_png, "PNG")
-            original_size_bytes = original_buffer_png.size()
-            original_buffer_png.close()
-
-            # Convert QImage to PIL Image using the PNG buffer
-            pil_image = Image.open(io.BytesIO(bytes(original_byte_array)))
+            # Convert QImage to PIL Image with correct conversion
+            buffer = QBuffer()
+            buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+            self.original_image.save(buffer, "PNG")
+            pil_image = Image.open(io.BytesIO(buffer.data()))
+            buffer.close()
 
             # --- Apply transformations ---
 
@@ -209,35 +203,48 @@ class ImageOptimizer(QMainWindow):
                 new_size = (int(pil_image.width * size_percent), int(pil_image.height * size_percent))
                 pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
             else:
-                # Handle case where no size button is selected (shouldn't happen with defaults)
                 self.status_label.setText("Error: No size preset selected")
                 return
-
-            # Convert to RGB if image has alpha channel
-            if pil_image.mode == "RGBA":
-                pil_image = pil_image.convert("RGB")
 
             # Get quality value
             selected_quality_button = self.quality_button_group.checkedButton()
             if selected_quality_button:
                 quality_value = self.quality_button_group.id(selected_quality_button)
             else:
-                # Handle case where no quality button is selected (shouldn't happen with defaults)
                 self.status_label.setText("Error: No quality preset selected")
                 return
 
-            # Convert back to QImage
+            # Save with quality compression
             buffer = io.BytesIO()
-            pil_image.save(buffer, format="JPEG", quality=quality_value)
+            if pil_image.mode == "RGBA":
+                # For RGBA images, we can still use JPEG by replacing alpha with white background
+                # This allows us to apply quality compression
+
+                bg = Image.new("RGB", pil_image.size, (255, 255, 255))
+                bg.paste(pil_image, mask=pil_image.split()[3])
+                bg.save(buffer, format="JPEG", quality=quality_value, optimize=True)
+            else:
+                # For RGB images, use JPEG compression
+                pil_image = pil_image.convert("RGB")
+                pil_image.save(buffer, format="JPEG", quality=quality_value, optimize=True)
+
             qimage = QImage()
             if not qimage.loadFromData(buffer.getvalue()):
                 raise ValueError("Failed to load processed image data")
 
             self.processed_image = qimage
-            self.display_image(qimage, "processed")  # Update only the processed image label
+            self.display_image(qimage, "processed")
 
-            # Calculate stats
-            processed_size_bytes = buffer.tell()  # Get size from JPEG buffer
+            # Calculate accurate file sizes
+            # Original size - preserve original format for fair comparison
+            original_buffer = QBuffer()
+            original_buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+            self.original_image.save(original_buffer, "PNG")  # Save in lossless format for fair comparison
+            original_size_bytes = original_buffer.size()
+            original_buffer.close()
+
+            # Store the compressed data size directly from the PIL save operation
+            processed_size_bytes = buffer.tell()
             processed_width = qimage.width()
             processed_height = qimage.height()
 
@@ -248,7 +255,7 @@ class ImageOptimizer(QMainWindow):
             original_kb = original_size_bytes / 1024
             processed_kb = processed_size_bytes / 1024
             stats_text = (
-                f"Original: {original_width}x{original_height}, {original_kb:.1f} KB\n"
+                f"Original: {self.original_image.width()}x{self.original_image.height()}, {original_kb:.1f} KB\n"
                 f"Processed: {processed_width}x{processed_height}, {processed_kb:.1f} KB\n"
                 f"Reduction: {size_reduction_percent:.1f}%"
             )
@@ -274,7 +281,12 @@ class ImageOptimizer(QMainWindow):
             if self.processed_image:
                 with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
                     file_path = tmp.name
-                self.processed_image.save(file_path, "JPEG")
+
+                # Get current quality setting to save with correct compression
+                selected_quality_button = self.quality_button_group.checkedButton()
+                quality_value = self.quality_button_group.id(selected_quality_button) if selected_quality_button else 85
+
+                self.processed_image.save(file_path, "JPEG", quality=quality_value)
                 clipboard = QApplication.clipboard()
                 clipboard.setText(file_path)
                 self.status_label.setText("Image saved and path copied to clipboard")
