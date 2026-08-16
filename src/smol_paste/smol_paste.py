@@ -94,9 +94,27 @@ class ImageOptimizer(QMainWindow):
                 button.setChecked(True)
         self.controls_layout.addLayout(self.quality_button_layout)
 
+        # Format presets
+        self.format_label = QLabel("Format:")
+        self.controls_layout.addWidget(self.format_label)
+        self.format_button_group = QButtonGroup(self)
+        self.format_button_layout = QHBoxLayout()
+        format_presets = ["PNG", "JPEG"]
+        for fmt in format_presets:
+            button = QPushButton(fmt)
+            button.setCheckable(True)
+            self.format_button_group.addButton(button)
+            self.format_button_layout.addWidget(button)
+            if fmt == "PNG":  # Default selection
+                button.setChecked(True)
+        self.controls_layout.addLayout(self.format_button_layout)
+
         # Connect preset buttons to apply changes automatically
         self.size_button_group.buttonClicked.connect(self.apply_changes)
         self.quality_button_group.buttonClicked.connect(self.apply_changes)
+        self.format_button_group.buttonClicked.connect(self.apply_changes)
+        self.format_button_group.buttonClicked.connect(self.update_quality_enabled)
+        self.update_quality_enabled()
 
         # Buttons
         self.load_button = QPushButton("Load from Clipboard")
@@ -180,6 +198,13 @@ class ImageOptimizer(QMainWindow):
         except Exception as e:
             self.status_label.setText(f"Error displaying image: {e!s}")
 
+    def update_quality_enabled(self):
+        """Disable quality presets when PNG is selected (PNG is lossless)."""
+        selected_format_button = self.format_button_group.checkedButton()
+        png_selected = selected_format_button is None or selected_format_button.text() == "PNG"
+        for button in self.quality_button_group.buttons():
+            button.setEnabled(not png_selected)
+
     def apply_changes(self):
         if not self.original_image:
             self.status_label.setText("No image to process")
@@ -206,27 +231,27 @@ class ImageOptimizer(QMainWindow):
                 self.status_label.setText("Error: No size preset selected")
                 return
 
-            # Get quality value
-            selected_quality_button = self.quality_button_group.checkedButton()
-            if selected_quality_button:
-                quality_value = self.quality_button_group.id(selected_quality_button)
-            else:
-                self.status_label.setText("Error: No quality preset selected")
-                return
+            # Determine output format
+            selected_format_button = self.format_button_group.checkedButton()
+            format_name = selected_format_button.text() if selected_format_button else "PNG"
 
-            # Save with quality compression
+            # Save with compression (quality only applies to JPEG)
             buffer = io.BytesIO()
-            if pil_image.mode == "RGBA":
-                # For RGBA images, we can still use JPEG by replacing alpha with white background
-                # This allows us to apply quality compression
+            if format_name == "JPEG":
+                selected_quality_button = self.quality_button_group.checkedButton()
+                quality_value = self.quality_button_group.id(selected_quality_button) if selected_quality_button else 85
 
-                bg = Image.new("RGB", pil_image.size, (255, 255, 255))
-                bg.paste(pil_image, mask=pil_image.split()[3])
-                bg.save(buffer, format="JPEG", quality=quality_value, optimize=True)
-            else:
-                # For RGB images, use JPEG compression
-                pil_image = pil_image.convert("RGB")
+                # For RGBA images, replace alpha with white background so JPEG can be used
+                if pil_image.mode == "RGBA":
+                    bg = Image.new("RGB", pil_image.size, (255, 255, 255))
+                    bg.paste(pil_image, mask=pil_image.split()[3])
+                    pil_image = bg
+                else:
+                    pil_image = pil_image.convert("RGB")
                 pil_image.save(buffer, format="JPEG", quality=quality_value, optimize=True)
+            else:
+                # PNG is lossless, keep alpha if present
+                pil_image.save(buffer, format="PNG", optimize=True)
 
             qimage = QImage()
             if not qimage.loadFromData(buffer.getvalue()):
@@ -279,17 +304,26 @@ class ImageOptimizer(QMainWindow):
     def save_and_copy_path(self):
         try:
             if self.processed_image:
-                with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                # Get current format and quality settings
+                selected_format_button = self.format_button_group.checkedButton()
+                format_name = selected_format_button.text() if selected_format_button else "PNG"
+                suffix = ".png" if format_name == "PNG" else ".jpg"
+
+                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                     file_path = tmp.name
 
-                # Get current quality setting to save with correct compression
-                selected_quality_button = self.quality_button_group.checkedButton()
-                quality_value = self.quality_button_group.id(selected_quality_button) if selected_quality_button else 85
+                if format_name == "JPEG":
+                    selected_quality_button = self.quality_button_group.checkedButton()
+                    quality_value = (
+                        self.quality_button_group.id(selected_quality_button) if selected_quality_button else 85
+                    )
+                    self.processed_image.save(file_path, "JPEG", quality=quality_value)
+                else:
+                    self.processed_image.save(file_path, "PNG")
 
-                self.processed_image.save(file_path, "JPEG", quality=quality_value)
                 clipboard = QApplication.clipboard()
                 clipboard.setText(file_path)
-                self.status_label.setText("Image saved and path copied to clipboard")
+                self.status_label.setText(f"{format_name} saved and path copied to clipboard")
             else:
                 self.status_label.setText("No image to save")
         except Exception as e:

@@ -70,6 +70,11 @@ def test_ui(qtbot):
         assert window.status_label.text() == "Image processed successfully"
         assert window.stats_label.text().startswith("Original:")
 
+    # Quality presets only apply in JPEG mode - switch to JPEG first
+    for format_btn in window.format_button_group.buttons():
+        if format_btn.text() == "JPEG":
+            format_btn.click()
+
     for quality_btn in window.quality_button_group.buttons():
         qtbot.mouseClick(quality_btn, Qt.MouseButton.LeftButton)
         assert quality_btn.isChecked()

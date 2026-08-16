@@ -9,6 +9,7 @@ Smol Paste is a simple, modern clipboard image optimizer with a PyQt6 GUI. It al
 - Load images directly from your clipboard
 - Resize images using preset size options (100%, 75%, 50%, 25%)
 - Compress images with quality presets (High, Medium, Low, Very Low)
+- Choose output format (lossless PNG or compressed JPEG)
 - Compare original and processed images side-by-side
 - Copy optimized images back to the clipboard
 - View image statistics (dimensions, file size, reduction percentage)
